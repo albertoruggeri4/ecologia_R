@@ -1,0 +1,54 @@
+# R spaziale: funzioni spaziali in Ecologia del paesaggio
+
+install.packajes("sp")
+
+#richiama il pacchetto
+library(sp)
+
+#dati(meuse)
+
+meuse
+
+#con questa funzione si vede solo la testa dei dati
+head(meuse)
+
+#plot con cadmium e lead 
+
+#alleghiamo il dataframe
+attach(meuse)
+
+plot(cadmium,lead,col="red",pch=19, cex=0.5)
+
+# exercise: plot di copper e zinco con simbolo triangolo (17) e colore verde
+plot(copper,zin,col="green",pch=17,cex=2)
+
+#CAMBIARE ETICHETTE
+plot(copper,zin,col="green",pch=17,cex=2, xlab= "rame", ylab ='zinco')
+
+#MULTIFRAME(mf) O MULTIPANEL/ numeri in riga con virgola sono vettori, 1 riga e 2 colonne
+par(mfrow=c(1,2))
+plot(cadmium,lead,col="red",pch=19, cex=2)
+plot(copper,zinc,col="green",pch=17,cex=2)
+
+#invertiamo i grafici riga/colonna in colonna/riga
+par(mfrow=c(2,1))
+plot(cadmium,lead,col="red",pch=19, cex=2)
+plot(copper,zinc,col="green",pch=17,cex=2)
+
+# MULTIGRAME AUTOMATICO
+install.packages("GGally")
+library(GGally)
+#per fare un subset utilizziamo la parentesi quadra, vediamo sull'head. la , significa partiamo da
+ggpairs(meuse[,3:6])
+
+# Spatial!! più funzione coordinates del pacchetto sp, con la tilde
+head(meuse)
+coordinates(meuse)=~x+y
+plot(meuse)
+
+#questo è il primo grafico spaziale, capire la composizione chimica di questo fiume
+spplot(meuse,"zinc")
+
+
+
+
