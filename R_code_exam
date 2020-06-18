@@ -739,3 +739,514 @@ plot(p224r63_2011c$map)
 #######################################################################
 #######################################################################
 #######################################################################
+
+
+# 7. R_code_multitemp
+
+# AR - Classificare un'immagine partendo dai dati dei pixel iniziali, raggruppandoli in classi di copertura del suolo
+#una classificazione con un algoritmo
+
+
+library(raster)
+library(ncdf4)
+library(rgdal)
+library(RStoolbox) # per utilizzare la classificazione unsuperClass
+
+setwd("C:/Lab")
+
+cl <- colorRampPalette(c('darkblue','blue','light blue'))(100) 
+
+# AR - IMPORTARE LE IMMAGINI DALLA CARTELLA DI LAVORO (Lab)
+defor1 <- brick("C:/Lab/defor1_.jpg") 
+defor2 <- brick("C:/Lab/defor2_.jpg") 
+
+# AR - PER USARE DUE CLASSI NON SUPERVISIONATE (ossia non spieghiamo al computer la divisione)
+# AR - NOTE: Computer raggruppa pixel che sembrano simili tra lorodefor1_c <- unsuperClass(defor1, nClasses=2)
+plot(defor1_c$map)
+
+# AR - ESERCIZIO: classificare con due classi l'immagine satellitare defor
+defor2_c <- unsuperClass(defor2, nClasses=2)
+plot(defor2_c$map)
+
+par(mfrow=c(2,2))
+cl <- colorRampPalette(c('black','green'))(100) # 
+plotRGB(defor1,1,2,3)
+plotRGB(defor2,1,2,3)
+plot(defor1_c$map,col=cl)
+plot(defor2_c$map,col=cl)
+
+d1 <- defor1_c$map
+d2 <- defor2_c$map
+
+
+# AR - FUNZIONE freq() PER VISUALIZZARE LA SUDDIVISIONE DEI PIXEL NELLE CLASSI
+freq(d1)
+totd1 <- 33757+307535 #numero px carta
+percent1 <- freq(d1)*100/totd1 # PER CALCOLARE LE PROPORZIONI, LA PERCENTUALE DELLE FREQUENZE
+
+# AR - percentuali:
+# AR - aree altre: 10.4
+# AR - foreste: 89.6
+
+# AR - STESSO PROCEDIMENTO PER LA CARTA 2
+freq(d2)
+totd2 <- 164271+178455
+percent2 <- freq(d2)*100/totd2
+percent2
+
+# AR - aree altre: 48
+# AR - foreste: 52
+
+
+# AR - CREARE UN DATAFRAME CON QUESTI DATI
+cover <- c("Agriculture","Forest")
+before <- c(9.9,90.1)
+after <- c(48.1,52.2)
+
+output <- data.frame(cover,before,after)
+View(output)
+
+
+############# GIORNO 2 ##################
+    
+library(gridExtra)
+
+setwd("C:/Lab/") # windows
+
+# AR - caricare l'area di lavoro 
+load("defor.RData")
+ls()
+library(raster)
+ 
+# AR -  plottare le due mappe 
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100)
+plot(d1c$map, col=cl)
+plot(d2c$map, col=cl)
+
+#  AR - copertura 
+cover <- c("Agriculture","Forest")
+before <- c(10.9,89.1)
+after <- c(48.2,51.8)
+
+output <- data.frame(cover,before,after)
+output
+
+# AR -  richiamare la libreria ggplot2
+library(ggplot2)
+
+#  AR - istogramma della % di copertura prima della deforestazione
+ggplot(output, aes(x=cover, y=before, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+dev.off()
+
+#  AR - Exercise: fare lo stesso procedimento per il dopo deforestazione ("after") 
+ggplot(output, aes(x=cover, y=after, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+#  AR - assegnare un nome agli istogrammi 
+grafico1 <- ggplot(output, aes(x=cover, y=before, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+grafico2 <- ggplot(output, aes(x=cover, y=after, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+#  AR - Exercise: utilizzare la funzione grid.arrange(plot1, plot2, nrow=n) per unire i due grafici
+grid.arrange(grafico1, grafico2, nrow=1)
+
+##############################################
+##############################################
+##############################################
+
+# 8. R_CODE_MULTITEMP 
+
+# AR - Sentinel image about no2 before and after covid in Italy
+ 
+
+setwd("C:/Lab")
+
+library (raster)
+library(ncdf4)
+
+
+# AR - Exercise: importare tutte le altre immagini EN 
+# AR - possibile utilizzare anche un "ciclo for" che importa automaticamente le immagini richieste
+EN01 <- raster("EN_0001.png")
+EN02 <- raster("EN_0002.png")
+EN03 <- raster("EN_0003.png")
+EN04 <- raster("EN_0004.png")
+EN05 <- raster("EN_0005.png")
+EN06 <- raster("EN_0006.png")
+EN07 <- raster("EN_0007.png")
+EN08 <- raster("EN_0008.png")
+EN09 <- raster("EN_0009.png")
+EN10 <- raster("EN_0010.png")
+EN11 <- raster("EN_0011.png")
+EN12 <- raster("EN_0012.png")
+EN13 <- raster("EN_0013.png")
+
+# AR - per introdurre una palette di colori 
+cl <- colorRampPalette(c('red','orange','yellow'))(100) 
+
+# AR - per plottare l'immagine iniziale (EN01) e l'immagine finale (EN13)
+par(mfrow=c(1,2))
+plot(EN01, col=cl)
+plot(EN13, col=cl)
+
+dev.off()
+
+# AR - differenza fra EN13 ed EN01
+difno2 <- EN13 - EN01
+cldif <- colorRampPalette(c('blue','black','yellow'))(100) #
+plot(difno2, col=cldif)
+
+# AR - per plottare tutte le immagini
+par(mfrow=c(4,4))
+plot(EN01, col=cl)
+plot(EN02, col=cl)
+plot(EN03, col=cl)
+plot(EN04, col=cl)
+plot(EN05, col=cl)
+plot(EN06, col=cl)
+plot(EN07, col=cl)
+plot(EN08, col=cl)
+plot(EN09, col=cl)
+plot(EN10, col=cl)
+plot(EN11, col=cl)
+plot(EN12, col=cl)
+plot(EN13, col=cl)
+
+
+##### GIORNO 2 #####
+
+# AR  entrare nella cartella EN all'interno della cartella Lab
+setwd("C:/Lab/EN")
+
+###   lapply   ###
+# AR - create a list of files (function list.files -- the common pattern is EN)
+rlist <- list.files(pattern="EN")
+
+rlist # AR - for see what you have in your list
+
+# AR - con lappy che praticamente non fa altro che applicare una serie di comandi a tutti gli elementi, la funzione è raster, la lista è rlist
+import <- lapply(rlist, raster)
+# AR - with the raster function i take only one band! The original files are RGB. The value is correlated to px value 0-255 
+
+# AR - then we will make a stack of all images (raster stack), different layer all togethere
+EN <- stack(import)
+
+# AR - now we can simply plot the no2 multitemp
+cl <- colorRampPalette(c('darkblue','light blue','yellow','orange','red'))(100)
+plot(EN, col=cl)
+
+
+# AR - difference map
+dif <- EN$EN_0013 - EN$EN_0001
+cld <- colorRampPalette(c('blue','white','red'))(100) #red=high difference
+plot(dif, col=cld)
+
+
+####  AR - box plot #####
+# AR -   https://www.rdocumentation.org/packages/graphics/versions/3.6.2/topics/boxplot
+### AR - statistical analysis with "box plot" (moda, media, mediana)
+boxplot(EN) 
+# AR - horizontal boxplot
+boxplot(EN, horizontal=TRUE)
+# AR - outlayer removed
+boxplot(EN, horizontal=TRUE,outline=F)
+
+# AR - from the first to the top image there is a negative sponencial degrees about NO2
+# AR - NOT IN THE MEDIAN VALUES, BUT IN THE MAXIMUN VALUE
+
+
+##################################################################
+##################################################################
+##################################################################
+
+# 9. R_CODE_SNOW
+
+# AR - CODICE R PER ANALISI MULTITEMPORALE DELLA SNOW COVER ATTRAVERSO LE IMMAGGINI DEL PORTALE COPERNICUS
+
+setwd("C:/Lab")
+
+# AR - new library ncdf4 che permette di vedere i dati con estensione NC
+#install.packages("ncdf4")
+
+library(ncdf4)
+library(raster)
+
+# AR - brick porta diverse bande della riflettanza/ raster una singola banda con tutte le componenti
+
+snowmay <- raster("c_gls_SCE500_202005180000_CEURO_MODIS_V1.0.1.nc")
+
+cl <- colorRampPalette(c('darkblue','blue','light blue'))(100)
+ 
+plot(snowmay, col=cl)
+
+######  AR - import snow data #####
+# AR - new wd
+
+setwd("C:/Lab/snow")
+
+# AR - da iol lApply, ci sono dei comandi per portare tutti i dati
+# AR - put all files into the folder
+
+# AR - nella nostra cartella abbiamo file tif
+rlist=list.files(pattern=".tif", full.names=T)
+
+# AR - save raster into list
+# AR - con lappy che praticamente non fa altro che applicare una serie di comandi a tutti gli elementi, la funzione è raster, la lista è rlist
+list_rast=lapply(rlist, raster)
+EN <- stack(list_rast)
+plot(EN)
+
+snow.multitemp <- stack(rlist)
+snow.multitemp
+
+plot(snow.multitemp, col=cl)
+
+# AR - il 2000 ed il 2010 sono dati simulati
+
+# AR - facciamo il plot della prima e l'ultima -- zlim rappresenta il limmite delle bande (la c per i vettori)
+
+par(mfrow=c(1,2))
+plot(snow.multitemp$snow2000r, col=cl)
+plot(snow.multitemp$snow2020r, col=cl)
+
+# AR - - zlim rappresenta il limmite delle bande (la c per i vettori)
+
+par(mfrow=c(1,2))
+plot(snow.multitemp$snow2000r, col=cl,  zlim=c(0,250))
+plot(snow.multitemp$snow2020r, col=cl, zlim=c(0,250))
+
+# AR - andiamo a fare una differenza delle due immagini
+diffsnow = snow.multitemp$snow2020r - snow.multitemp$snow2000r
+
+cldiff <- colorRampPalette(c('blue', 'white', 'red'))(100)
+plot(diffsnow, col=cldiff)
+
+# AR - prediction 
+# AR - go to IOL and download preiction.r
+# AR - funzione source per caricare UN CODICE dall'esterno
+source("prediction.r")
+
+# AR - since the code need time, download pre... from iol
+plot(predicted.snow.2025.norm, col=cl)
+
+# AR - con la funz raster lo leghiamo al file scaricato nella cartella snow
+predicted.snow.2025.norm <- raster("predicted.snow.2025.norm.tif")
+
+plot(predicted.snow.2025.norm, col=cl)
+
+##############################################
+##############################################
+##############################################
+
+### 10. R CODE PATCHES 
+    
+# AR - CODICE R PER ANALISI DELLA FRAMMENTAZIONE DEGLI ECOSISTEMI
+
+# AR -  R code Patches
+
+#install.packages("raster")
+library(raster)
+#install.packages("igraph")
+library(igraph)
+#install.packages("ggplot2")
+library(ggplot2)
+
+# AR -  per entrare nella cartella di lavoro
+setwd("C:/Lab") # windows
+
+# AR -  per importare le due immagini
+d1c <- raster("d1c.tif")
+d2c <- raster("d2c.tif")
+
+# plottare le due immagini 
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100) #
+plot(d1c,col=cl)
+plot(d2c,col=cl)
+
+# AR -  riclassificazione della prima immagine
+# AR -  land cover 1= agriculture; land cover 2=forest
+d1c.for <- reclassify(d1c, cbind(1, NA))
+
+# AR -  plottare l'immagine riclassificata con l'immagine originale
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100) #
+plot(d1c,col=cl)
+plot(d1c.for,col=cl)
+
+dev.off()
+
+# AR -  riclassificazione della seconda immagine
+d2c.for <- reclassify(d2c, cbind(1, NA))
+
+# AR -  plottare le due immagini riclassificate 
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100) #
+plot(d1c.for,col=cl)
+plot(d2c.for,col=cl)
+
+dev.off()
+
+# AR -  funzione clump aggrage i pixels vicini per formare un'unica patche
+d1c.for.patches <- clump(d1c.for)
+d2c.for.patches <- clump(d2c.for)
+
+# AR -  plottare le due immagini riclassificate 
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100) #
+plot(d1c.for.patches,col=cl)
+plot(d2c.for.patches,col=cl)
+
+# AR -  per salvare il raster nella cartella di lavoro
+writeRaster(d1c.for.patches, "d1c.for.patches.tif")
+writeRaster(d2c.for.patches, "d2c.for.patches.tif")
+
+# AR - Exercise: plottare con un'altra color palette
+clp <- colorRampPalette(c('dark blue','blue','green','orange','yellow','red'))(100) # 
+par(mfrow=c(1,2))
+plot(d1c.for.patches, col=clp)
+plot(d2c.for.patches, col=clp)
+
+#  AR - max patches d1 = 301
+#  AR - max patches d2 = 1212
+
+#  AR - analisi multitemporale del numero di patches
+time <- c("Before deforestation","After deforestation")
+npatches <- c(301,1212)
+
+output <- data.frame(time,npatches)
+attach(output)
+
+ggplot(output, aes(x=time, y=npatches, color="red")) + geom_bar(stat="identity", fill="white")
+
+
+##############################################
+##############################################
+##############################################
+
+### 11. R code crop
+
+#  AR - crop an image
+
+setwd("C:/Lab")
+
+library(raster)
+library(ncdf4) #because we work with copernicus images
+
+snow <- raster('c_gls_SCE500_202005180000_CEURO_MODIS_V1.0.1.nc')
+
+cl <- colorRampPalette(c('darkblue','blue','lightblue'))(100)
+plot(snow, col=cl)
+
+#  AR - now we can zoom or crop
+#  AR - we want that our extention is from 0 - 20 (long) and from 35- 50 (lat)
+
+ext <- c(0,20,35,50)
+
+#  AR - now we can use the function zoom(object, ext)
+zoom(snow, ext=ext)
+
+
+#  AR - crop function and create a new image
+snowitaly <- crop(snow, ext)
+plot(snowitaly, col=cl)
+
+
+#  AR - try to make it manually with drawExtent    (in the IOL site there is the R_code_crop_zoom)
+zoom(snow, ext=drawExtent())
+
+
+##############################################
+##############################################
+##############################################
+
+### 12. R_code_SDM
+
+# AR - CODICE PER L'ANALISI DELLA SPECIESDISTRIBUTION MODELLING
+
+# Species monitoring
+
+setwd("C:/Lab")
+
+# AR - check in the documentation
+library(sdm)
+library(raster) #predictors
+library(rgdal) #species
+
+
+
+## AR - species
+# AR - with sdm there is a new folder "external/pecies.shp" where there is species data 
+file <- system.file("external/species.shp", package="sdm")
+species <- shapefile(file)
+
+plot(species)
+# AR - extent --> lat/long --> we are in spain
+species
+
+# AR - look at occurrence species -- values of specie: 1=species present 0=species not present
+species$occurrence 
+
+# AR - let's make a condition with [ --> species occurence might be egual 1 (condition with ==) and the final comma to finish the condition
+plot(species[species$Occurrence == 1,],col='blue',pch=16)
+points(species[species$Occurrence == 0,],col='red',pch=16)
+
+# AR - environmental variables -- inside external also there are the predictors
+path <- system.file("external", package="sdm")
+
+# AR - ASCII file temperature,vegetation, elevation,precipitation
+lst <- list.files(path=path,pattern='asc$',full.names = T)
+lst
+
+# AR - make a stack of these variables
+preds <- stack(lst)
+
+cl <- colorRampPalette(c('blue','orange','red','yellow')) (100)
+plot(preds, col=cl)
+
+# AR - ex Brachipodiuorum rupestre -- correlation with different variables
+plot(preds$elevation, col=cl)
+points(species[species$Occurrence == 1,], pch=16)
+
+plot(preds$temperature, col=cl)
+points(species[species$Occurrence == 1,], pch=16)
+
+plot(preds$precipitation, col=cl)
+points(species[species$Occurrence == 1,], pch=16)
+
+plot(preds$vegetation, col=cl)
+points(species[species$Occurrence == 1,], pch=16)
+
+
+##### AR - put togethere all these data (preds - species)
+# AR - CREATE A MODEL
+
+d <- sdmData(train=species, predictors=preds)
+d 
+# n° species only one (brachipodiuorum) -- type presence-absence (but it may be abbundance, with percentual)
+
+#combination different variables (y=a+bx) (dataset --> d, species and predictors) (methods == type file?)
+m1 <- sdm(Occurrence ~ elevation + precipitation + temperature + vegetation, data=d, methods = "glm")
+p1 <- predict(m1, newdata=preds)
+
+plot(p1, col=cl)
+points(species[species$Occurrence == 1,], pch=16)
+
+s1 <- stack(preds, p1)
+plot(s1, col=cl)
+
+################################################################
+################################################################
+#################################################################
+
+
+# EXAM PROJECT
+
+# Here put your code
+
+
