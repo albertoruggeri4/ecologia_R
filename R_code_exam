@@ -1,0 +1,741 @@
+# ESAME DI ECOLOGIA DEL PAESAGGIO (DUCCIO ROCCHINI - UNIBO)
+# R CODE
+
+
+### INDICE
+# 1. R_code_primocod.r   
+# 2. R_code_spatial.r   
+# 3. R_code_spatial2.r
+# 4. R_code_point_patterns.r  
+# 5. R_code_teleril.r   
+# 6. R_code_landcover.r   
+# 7. R_code_multitemp.r   
+# 8. R_code_multitemp_NO2.r   
+# 9. R_code_snow.r   
+# 10. R_code_patches.r  
+# 11. R_code_crop.r
+# 12. R_code_sdm.r
+  
+
+#########################################################################
+#########################################################################
+
+### 1. R_CODE_PRIMOCOD.R
+
+# AR - IMPORTIAMO IL PACCHETTO "SP" ATTRAVERSO LA FUNZIONE LIBRARY - UTILE PER L'ANALISI SPAZIALE DEI DATI
+# AR - PER INSTALLARE UN PACKAGE -> install.packages("name_packages")
+# AR - LE VIRGOLETTE VENGONO UTILIZZATE OGNI VOLTA CHE ANDIAMO FUORI R
+
+install.packages("sp")
+library (sp)
+
+
+# AR - COME VISUALIZZARE UN DATA SET
+
+data(meuse) # UTILIZZIAMO LA FUNZIONE DATA() PER VISUALIZZARE IL DATA SET MEUSE
+meuse # TUTTE LE INFORMAZIONI
+head (meuse) # SOLO I PRIMI 6 ELEMENTI DEL DATASET
+name (meuse) # NOMI DELLE VARIABILI
+summary (meuse) #INFORMAZIONI COME MEDIA, VAL MIN E MAX
+
+# AR - FUNZIONE pairs() CREA UN GRAFICO DI CORRELAZIONE TRA LE VARIABILI DEL DATA SET INSERITO COME ARGOMENTO
+pairs (meuse)
+
+# AR - SE SI VUOLE VISUALLIZARE SOLO ALCUNE VARIABILI CON LA FUNZIONE pairs()
+# AR - OCCORRE UTILIZZARE LA TILDE (~), AGGIUNGERE LE VARIABILI DI INTERESSE CONCATENATE DAL "+"
+# AR - ED INFINE INSERIRE IL DATA SET DI INTERESSE data = ""
+pairs(~ cadmium + copper + lead , data = meuse)
+
+
+# AR - ESERCIZIO: utilizza la funzione pairs mettendo cadium, copper, leaad e zinc
+pairs(~ cadmium + copper + lead + zinc, data = meuse)
+
+# AR - PER PRENDERE UN SUBSET SI FA RICORSO ALLO "SLICING": si utlizzano le parentesi quadre "[]", inserendo gli indici delle variabili di interesse, partendo da (",") colonna 3 a colonna 6(":"). Ci darà grafico uguale a prima
+pairs(meuse[,3:6])
+
+# AR - PER CAMBIARE COLOREALLE FUNZIONI: col = "color_name"  (lista colori visualizzabile nella documentation R)
+pairs(meuse[,3:6], col="blue")
+
+# AR - PER CAMBIARE TIPO DI CARATTERI UTILIZZO pch (point character), ogni numero corrisponde ad un simbolo (visualizzabili sulla documentazione R)
+pairs(meuse[,3:6], col="blue", pch=17)
+
+# AR - PER CAMBIARE DIMENSIONE PUNTI USO cex("character exageration"),se cex=1 non cambia nulla
+pairs(meuse[,3:6], col="blue", pch=17, cex=3)
+
+# AR - PER INSERIRO UN TITOLO AL GRAFICO: main="titolo"
+pairs(meuse[,3:6], col="blue", pch=17, cex=3, main="Primo pairs")
+
+
+#ESERCIZIO inserire la variabile elevation
+pairs(meuse[,3:7], col="blue", pch=17, cex=3, main="Primo pairs")
+
+# FUNZIONE PER INSERIRE FILE DALL'ESTERNO
+panel.correlations <- function(x, y, digits=1, prefix="", cex.cor)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r1=cor(x,y,use="pairwise.complete.obs")
+    r <- abs(cor(x, y,use="pairwise.complete.obs"))
+
+ 
+
+    txt <- format(c(r1, 0.123456789), digits=digits)[1]
+    txt <- paste(prefix, txt, sep="")
+    if(missing(cex.cor)) cex <- 0.9/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex * r)
+}
+
+ 
+
+panel.smoothing <- function (x, y, col = par("col"), bg = NA, pch = par("pch"),
+    cex = 1, col.smooth = "red", span = 2/3, iter = 3, ...)
+{
+    points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+    ok <- is.finite(x) & is.finite(y)
+    if (any(ok))
+        lines(stats::lowess(x[ok], y[ok], f = span, iter = iter),
+            col = 1, ...)
+}
+
+ 
+
+
+panel.histograms <- function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col="white", ...)
+}
+
+# AR - LA FUNZIONE "lowess" è smooter locale: uso linea per mostrare relazione tra variabili
+# AR - LA FUNZIONE "histograms" fa istogramma variabili
+# AR - LA FUNZIONE "lower.panel" è parte inferiore del grafico pairs e decido cosa metterci, ad es. le correlazioni
+# AR - LA FUNZIONE "upper.panel" è parte superiore e ci metto lo smoothing, ossia il grafico dei punti con le linee di correlazione
+# AR - LA FUNZIONE "diag.panel" è diagonale e ci metto gli istogrammi
+
+pairs(meuse[,3:6], lower.panel = panel.correlations, upper.panel = panel.smoothing, diag.panel = panel.histograms)
+
+#Esercizio. mettere nel lower lo smoothing e nell'upper le correlation
+pairs(meuse[,3:6], lower.panel = panel.smoothing, upper.panel = panel.correlations, diag.panel = panel.histograms)
+
+# AR - UTILIZZIAMO IL SEGNO $ PER SPECIFICARE IL DATA SET DELLA VARIABILE SELEZIONATA dataset$variabile
+plot(meuse$cadmium, meuse$copper)
+
+#AR - POSSIAMO IN ALTERNATIVA, STABILIRE TRAMITE ATTACH() IL DATA SET DI RIFERIMENTO
+attach(meuse)
+plot(cadmium, copper)
+
+# AR - CAMBIO NOME ETICHETTE: xlab e ylab cambiano il nome alle variabili
+plot(cadmium, copper, pch=19, col="green", main="Primo plot", xlab="cadmio", ylab="rame")
+
+# AR - PROVIAMO AD ESAGERARE I CARATTERI ATTRAVERO cex.lab
+plot(cadmium, copper, pch=19, col="green", main="Primo plot", xlab="cadmio", ylab="rame", cex.lab=1.5, cex=2)
+
+###########################################
+###########################################
+###########################################
+
+
+##### 2. R_CODE_SPATIAL.R
+
+
+# AR - R spaziale: funzioni spaziali in Ecologia del paesaggio
+
+
+
+#install.packajes("sp")
+
+# AR - RICHIAMO IL PACCHETTO SP
+library(sp)
+
+
+data(meuse)
+
+meuse
+
+head(meuse)
+
+# AR - PLOTTIAMO CADMIUM E LEAD
+
+# AR - alleghiamo il dataframe
+attach(meuse)
+
+plot(cadmium,lead,col="red",pch=19, cex=0.5)
+
+#  AR - ESERCIZIO plot di copper e zinco con simbolo triangolo (17) e colore verde
+plot(copper,zin,col="green",pch=17,cex=2)
+
+# AR - CAMBIARE ETICHETTE
+plot(copper,zin,col="green",pch=17,cex=2, xlab= "rame", ylab ='zinco')
+
+# AR - FUNZIONE par(mfrow=(n°righe,n°colonne)) PER CREARE UN MULTIFRAME(mf) O MULTIPANEL/ numeri in riga con virgola sono vettori, 1 riga e 2 colonne
+par(mfrow=c(1,2))
+plot(cadmium,lead,col="red",pch=19, cex=2)
+plot(copper,zinc,col="green",pch=17,cex=2)
+
+# AR - PER INVERTIRE I GRAFICI
+par(mfrow=c(2,1))
+plot(cadmium,lead,col="red",pch=19, cex=2)
+plot(copper,zinc,col="green",pch=17,cex=2)
+
+
+## AR - NUOVA LIBRERIA GGally --> he R package 'ggplot2' is a plotting system based on the grammar of graphics. 'GGally' extends 'ggplot2' by adding several functions to reduce the complexity of combining geometric objects with transformed data. Some of these functions include a pairwise plot matrix, a two group pairwise plot matrix, a parallel coordinates plot, a survival plot, and several functions to plot networks.
+install.packages("GGally")
+library(GGally)
+
+# AR - per fare un subset utilizziamo la parentesi quadra, vediamo sull'head. la , significa partiamo da
+ggpairs(meuse[,3:6])
+
+# AR -  Spatial!! LA FUNZIONE COORDINATES --> OTTENERE LE COORDINATE DEL DATASET
+head(meuse)
+coordinates(meuse)=~x+y
+plot(meuse)
+
+# AR - POSSIAMO CREARE UN SPPLOT PER CAPIRI I DATI RELATIVI ALLO ZINCO, IN PARTICOLARE LA COMPOSIZIONE CHIMICA DI QUESTO FIUME
+spplot(meuse,"zinc")
+
+
+# AR - OSSERVARE LA CONCENTRAZIONE SIA PER LO ZINCO VISTA PRECEDENTEMENTE ED ORA PER IL RAME SULLA PARTE SX DEL FIUME
+spplot(meuse,"copper")
+
+# AR - UTILIZZIAMO LA FUNZIONE bubble() PER CREARE UN BUBBLE PLOT, (sempre sul pacchetto sp)
+bubble(meuse,"zinc")
+
+# AR - ESERCIZIO: INSERIRE I DATI RELATIVI A DUE CASI STUDIO: Foraminiferi (Sofia), carbon capture (Marco)
+# AR - CREIAMO UN ARRAY
+foram <- c(10, 20, 35, 55, 67, 80)
+carbon <- c(5, 15, 30, 70, 85, 99)
+
+# AR - PLOTTIAMO I DATI PER VALUTARE LE CORRELAZIONI
+plot(foram, carbon, col="green",pch=1)
+
+####  AR - PORTIAMO DEI DALL'ESTERNO SUL COVID-19
+# AR - SETTIAMO LA WORKING DIRECTORY
+setwd("C:/Lab")
+
+# AR -FUNZIONE read.table("") PER LEGGERE UNA TABELLA, FILE CSV, ECC
+read.table("covid_agg.csv",header=TRUE)
+
+# ASSOCIARE LA TABELLA AD UN NOME EX."covid"
+# AR - LEGGIAMO LA TABELLA, SE C'è IL TITOLO SI METTE HEAD= T/TRUE o al contrario F/FALSE
+covid <- read.table("covid_agg.csv", head= TRUE)
+
+##############################################
+##############################################
+##############################################
+
+### 4. R CODE POINTS PATTERNS.R
+# AR - Codici per analisi dei patterns
+
+
+setwd("C:/Lab")
+
+covid <- read.table("covid_agg.csv", head=T)
+
+head(covid)
+
+plot(covid$country, covid$cases)
+
+#  AR - CAMBIARE POSIZIOE ETICHETTE : Con las =0 è di default e rimangono paralleli
+
+plot(covid$country, covid$cases, las=0) #etichette X e Y parallele
+plot(covid$country, covid$cases, las=1) #etichette Y orizzontali
+plot(covid$country, covid$cases, las=2) #Etichette perpendicolari
+plot(covid$country, covid$cases, las=3) #Etichette 
+
+# AR - PER MODIFICARE LA DIMENSIONE DEL CARATTERE
+plot(covid$country, covid$cases, las=2, cex.axis= 0.7)
+
+# AR - INSERIAMO DUE NUOVE LIBRARY UTILI PER L'ANALISI SPAZIALE
+install.packages("ggplot2")
+install.packages("spatstat")
+
+library("ggplot2")
+library("spatstat")
+
+# AR - UTILIZZIAMO IL DATA SET "mpg" CONTENUTO ALL'INTERNO DEL PACCHETTO "ggplot2"
+# AR - IL DATA SET "mpg" CONTIENE DATI RELATIVI AL RISPARMIO DI CARBURANTE NEGLI ANNI 1999 E 2008 PER 38 MODELLI DI AUTO POPOLARI
+data("mpg")
+head("mpg")
+
+# AR - UTILIZZANDO LA FUNZIONE GGPLOT E' POSSIBILE GENERARE UN GRAFICO I CUI PARAMETRI SONO:
+# AR - MAPPATURA aes() (aesthetic)
+# AR - GEOMETRIA (geom) DELLE VARIABILI (ex. geom_line/point/polygon)
+
+# AR - ggplot con i dati mpg
+ggplot(mpg,aes(x=displ,y=hwy)) + geom_point()
+ggplot(mpg,aes(x=displ,y=hwy)) + geom_line()  
+# AR - funzione utilizzata per le variazioni di temperatura
+ggplot(mpg,aes(x=displ,y=hwy)) + geom_polygon()
+
+# AR - ggplot con i dati covid-19
+ggplot(covid,aes(x=lon,y=lat,size=cases)) + geom_point()
+
+# AR - ANDIAMO A CREARE LA MAPPA DELLA DENSITA'
+# AR - create dataset for spatstat, c per i vettori/range in questo caso della long e lat
+attach(covid) #in modo da allegare il nostro dataset con anche lon e lat
+covids <- ppp(lon, lat, c(-180,180), c(-90,90))
+
+# AR - CALCOLIAMO LA DENSITA' DEI PUNTI COVID TRAMITE LA FUNZONE density()  E L'ASSOCIAMO AD UN NOME "d"
+d <- density(covids)
+plot(d) #andiamo a plottare la densità che abbiamo chiamato d
+
+points(covids) #se si vuol aggiungere il pch
+
+
+# AR - SALVARE L'.Rdata
+
+# AR - CHIUDERE R E PROVARE A RIAPRIRE Rdata
+
+
+
+########## SECONDA PARTE 
+
+
+# AR - RICHIAMARE LA CARTELLA DI LAVORO (Lab)
+setwd("C:/Lab")
+load("covid.RData")
+ls()
+
+# AR -  RICHIAMARE IL PACCHETTO "spatstat"
+library(spatstat)
+plot(d)
+
+
+#  AR - ANDIAMO A CREARE una colorRampPalette() PER GENERARE UNA SCALA DI COLORI
+#  AR - INSERIRE UN ARRAY DI COLORI COME ARGOMENTO DELLA FUNZIONE colorRampPalette()
+#  AR - IL NUMERO FUORI DALLA FUNZIONE INDICA LA VARIAZIONE DI SFUMATURE TRA UN COLORE E L'ALTRO   
+#  AR - ANDIAMO AD INSERIRE LA NOSTRA COLORPALETTE SU COL=
+cl <- colorRampPalette(c('yellow','orange','red')) (100)
+plot(d, col=cl)
+
+#  AR -  ESERCIZIO: plot della mappa della densità da verde a blu
+cl2 <- colorRampPalette(c('green','blue')) (200)
+plot(d, col=cl2)
+
+points(covids)
+
+#  AR - PER POTER CARICARE UNO SHAPEFILE ESRI SI UTILIZZA readOGR()
+#  AR - IMPORTIAMO IN QUESTO CASO LE LINEE DELLE COSTE 
+#  AR -  ASSEGNARE LA FUNZIONE readOGR() A "coastlines"
+#  AR -  add=TRUE PER AGGIUNGERE IL NUOVO PLOT ALLO STESSO GRAFICO 
+library(rgdal)
+coastlines <- readOGR("ne_10m_coastline.shp")
+plot(coastlines, add=TRUE)
+
+#  AR -  ESERCIZIO: plot della mappa di densità con una nuova colorazione e aggiunta delle coastlines
+cl3 <- colorRampPalette(c('green','yellow','red')) (200)
+plot(d, col=cl3)
+points(covids)
+plot(coastlines, add=TRUE)
+
+#  AR -  ESERCIZIO2: caricare in R il workspace covid.RData (funzione load("...")) e creare una mappa di densità
+
+setwd("C:/Lab")
+load("covid.RData")
+ls()
+library(spatstat)
+plot(d, main="densità covid-19")
+points(covids)
+
+#  AR -  INSERIRE GLI SHAPEFILE DELLE COSTE
+library(rgdal)
+coastlines <- readOGR("ne_10m_coastline.shp")
+plot(coastlines, add=TRUE)
+
+#   AR - INTERPOLAZIONE DEI PUNTI COVID-19
+#  AR -  FUNZIONE marks() PER ESTRARRE O MODIFICARE I SIMBOLI ASSEGNATI AD UN DETERMINAT DATA SET DI UN POINT PATTERN
+head(covid)
+marks(covids) <- covid$cases
+s <- Smooth(covids)
+plot(s)
+
+#  AR -  ESERCIZIO: plottare covids con una diversa color palette (punti e shapefile delle coste)
+cl5 <- colorRampPalette(c('cyan', 'purple', 'red')) (200) 
+plot(s, col=cl5, main="stima dei casi covid-19")
+points(covids)
+plot(coastlines, add=T)
+#   AR - FUNZIONE text() PER VISUALIZZARE IL VALORE DEI PUNTI SULLA MAPPA
+text(covids)
+
+###   AR - MAPPA FINALE 
+par(mfrow=c(2,1))
+
+#  AR -  DENSITA'
+cl5 <- colorRampPalette(c('cyan', 'purple', 'red')) (200) 
+plot(d, col=cl5, main="densità covid-19")
+points(covids)
+coastlines <- readOGR("ne_10m_coastline.shp")
+plot(coastlines, add=T)
+
+#  AR -  INTERPOLAZIONE NUMERO DI CASI
+cl5 <- colorRampPalette(c('cyan', 'purple', 'red')) (200) 
+plot(s, col=cl5, main="stima dei casi")
+points(covids)
+coastlines <- readOGR("ne_10m_coastline.shp")
+plot(coastlines, add=T)
+
+###   AR - DATI SAN MARINO (caso di studio)
+
+setwd("C:/Lab")
+library(spatstat)
+# CARICARE "Tesi.RData"
+load("Tesi.RData")
+ls()
+head(Tesi)
+attach(Tesi)
+
+summary(Tesi)
+#   AR - x varia da 12.42 a 12.46
+#   AR - y varia da 43.91 a 43.94
+
+#  AR -  POINT PATTERN : x, y, z
+Tesippp <- ppp(Longitude, Latitude, c(12.41,12.47), c(43.90,43.95))
+
+#  AR -  DENSITA'
+dT <- density(Tesippp)
+plot(dT)
+points(Tesippp)
+
+dev.off()
+
+############ TERZA PARTE
+    
+setwd("C:/Lab")
+load("Tesi.RData")
+ls()
+#   AR - OTTENGO I FILE PRESENTI:
+#   AR - "dT" è density map di Tesippp
+#   AR - "Tesi" è un dataset
+#   AR - "Tesippp" è il point pattern del file "Tesi" (da libreria "Spatstat")
+
+#   AR - ASSOCIAMO I VALORI CHE VOGLIAMO STIMARE
+library(spatstat)
+plot(dT)
+points(Tesippp, col="green")
+
+#   AR - ANDIAMO A STIMARE LA RICCHEZZA SPECIFICA
+#   AR - CON head() VEDO CHE SI TROVA SOTTO A "Species_richness"
+#   AR - FUNZIONE marks() PRENDE I VALORI DELLA TABELLA E LI ASSOCIA AI PUNTI DEL PPP
+head(Tesi)
+marks(Tesippp) <- Tesi$Species_richness
+
+#   AR - ASSOCIARE LA FUNZIONE Smooth() A "interpol"
+interpol <- Smooth(Tesippp)
+
+#   AR - DATI SAN MARINO 
+    
+library(rgdal)
+sanmarino <- readOGR("San_Marino.shp")
+plot(sanmarino)
+plot(interpol, add=T) 
+points(Tesippp,col="green")
+#   AR - MAPPA VA A SOVRAPPORSI AI CONFINI DI SAN MARINO 
+plot(sanmarino, add=T) 
+
+#   AR - ESERCIZIO: plot multiframe di densità e interpolazione
+par(mfrow=c(2,1))
+plot(dT, main="Densità di punti")
+points(Tesippp, col="green")
+plot(interpol, main="Stima della ricchezza di specie")
+points(Tesippp, col="green")
+
+#   AR - ESERCIZIO2: inverto la disposizione del grafico
+par(mfrow=c(1,2))
+plot(dT, main="Densità di punti")
+points(Tesippp, col="green")
+plot(interpol, main="Stima della ricchezza di specie")
+points(Tesippp, col="green")
+
+dev.off()
+
+##############################################
+##############################################
+##############################################
+
+
+##### 5. R_CODE_TELERIV
+
+#   AR - CODICE R PER L'ANALISI DI IMMAGINI SATELLITARI
+    
+#   AR -  PACCHETTI UTILIZZATI: "raster", "RStoolbox"
+
+# install.packages("raster")
+# install.packages("RStoolbox")
+library(raster)
+library(RStoolbox)
+
+setwd("C:/Lab")
+
+#   AR -  FUNZIONE brick() PER IMPORTARE DATI DALL'ESTERNO E ASSOCIARLI AD UNA CERTA IMMAGINE
+#   AR - BRICK --> IMPORTA TUTTE LE BANDE // RASTER --> SOLO UNA BANDA
+p224r63_2011 <- brick("p224r63_2011_masked.grd")
+plot(p224r63_2011)
+
+# B1: blue
+# B2: green
+# B3: red
+# B4: near infrared (nir)
+# B5: medium infrared
+# B6: thermal infrared
+# B7: medium infrared
+
+#  AR -  SALVARE L'.RData
+
+#  AR -  FUNZIONE load("") PER RICARICARE L'.RData
+load("teleril.RData")
+ls()
+
+
+plot(p224r63_2011)
+
+cl <- colorRampPalette(c('black','grey','light grey'))(100) 
+plot(p224r63_2011, col=cl)
+    
+#  AR -  ESERCIZIO: plottare l'immagine con una palette differente
+clb <- colorRampPalette(c('dark blue','blue','light blue'))(100) 
+
+#   AR - NOTE: la funzione attach(dataframe) non è utilizzabile con il pacchetto raster
+#  AR -  "$" LEGA LA COLONNA (LA BANDA) AL DATASET (IMMAGINE SATELLITARE) (es. p224r63$B1_sre)
+plot(p224r63_2011$B1_sre, col=clb)
+
+#ESERCIZIO: plottare la banda del NIR con colorRampPalette che varia dal rosso all'arancione al giallo
+clnir <- colorRampPalette(c('red','orange','yellow'))(100)
+plot(p224r63_2011$B4_sre, col=clnir)
+
+#   AR - MULTIFRAME con 4 bande (blu, rosso, verde, nir(
+par(mfrow=c(2,2))
+# blue
+clb <- colorRampPalette(c('dark blue','blue','light blue'))(100) # 
+plot(p224r63_2011$B1_sre, col=clb)
+# green
+clg <- colorRampPalette(c('dark green','green','light green'))(100) # 
+plot(p224r63_2011$B1_sre, col=clg)
+# red
+clr <- colorRampPalette(c('dark red','red','pink'))(100) # 
+plot(p224r63_2011$B1_sre, col=clr)
+# nir
+clnir <- colorRampPalette(c('red','orange','yellow'))(100)
+plot(p224r63_2011$B4_sre, col=clnir)
+
+dev.off()
+
+#   AR - NATURAL COLOR:
+#  AR -  tre bande: R= banda del rosso, G= banda del verde, B= banda del blu
+plotRGB(p224r63_2011, r=3, g=2, b=1) # plotRGB: no!
+
+#  AR -  STRETCH DEI COLORI CON TIPOLOGIA Lineare ("Lin")
+plotRGB(p224r63_2011, r=3, g=2, b=1, stretch="Lin")
+
+#   AR - FALSE COLOR (andiamo ad introdurre la banda nir, non visibile ad occhio nudo)
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+#   AR - FUNZIONE pdf""() PER SALVARE L'IMMAGINE IN PDF
+pdf("primo_grafico")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+dev.off()
+    
+par(mfrow=c(2,1))
+plotRGB(p224r63_2011, r=3, g=2, b=1, stretch="Lin")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+#   AR - ESERCIZIO: nir nella componente green
+plotRGB(p224r63_2011, r=3, g=4, b=2, stretch="Lin")
+#   AR - ESERCIZIO2: nir nella componente blue
+plotRGB(p224r63_2011, r=3, g=2, b=4, stretch="Lin")
+
+
+### GIORNO 2
+
+setwd("C:/Lab") 
+
+library(raster)
+load("teleril.RData")
+ls()
+
+p224r63_1988 <- brick("p224r63_1988_masked.grd")
+plot(p224r63_1988)
+
+    
+# B1: blue
+# B2: green
+# B3: red
+# B4: near infrared (nir)
+# B5: medium infrared
+# B6: thermal infrared
+# B7: medium infrared
+
+par(mfrow=c(2,2))
+# blue
+clb <- colorRampPalette(c('dark blue','blue','light blue'))(100) # 
+plot(p224r63_1988$B1_sre, col=clb)
+# green
+clg <- colorRampPalette(c('dark green','green','light green'))(100) # 
+plot(p224r63_1988$B1_sre, col=clg)
+# red
+clr <- colorRampPalette(c('dark red','red','pink'))(100) # 
+plot(p224r63_1988$B1_sre, col=clr)
+# nir
+clnir <- colorRampPalette(c('red','orange','yellow'))(100)
+plot(p224r63_1988$B4_sre, col=clnir)
+
+
+dev.off()
+
+    
+# B1: blue - 1
+# B2: green - 2
+# B3: red - 3
+# B4: near infrared (nir) - 4
+
+# NATURAL COLOR
+# tre componenti: R G B
+# tre bande: R= banda del rosso, G= banda del verde, B= banda del blu
+plotRGB(p224r63_1988, r=3, g=2, b=1)
+plotRGB(p224r63_1988, r=3, g=2, b=1, stretch="Lin")
+
+#   AR - ESERCIZIO: plottare l'immagine usando il sensore nir al posto della componente r nello spazio RGB
+plotRGB(p224r63_1988, r=4, g=3, b=2, stretch="Lin")
+
+#   AR - PLOTTARE LE IMMAGINI DEL 1988 E DEL 2011 PER ANALIZZARE I CAMBIAMENTI
+par(mfrow=c(2,1))
+plotRGB(p224r63_1988, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+dev.off()
+
+#  AR -  SPECTRAL INDICES
+#  AR -  dvi1988 = nir1988 - red1988
+dvi1988 <- p224r63_1988$B4_sre - p224r63_1988$B3_sre
+
+plot(dvi1988)
+#   AR - ESERCIZIO: plottare l'indice dvi per il 2011
+#   AR - dvi2011 = nir2011 - red2011
+dvi2011 <- p224r63_2011$B4_sre - p224r63_2011$B3_sre
+
+plot(dvi2011)
+
+dev.off()
+
+cldvi <- colorRampPalette(c('light blue','light green','green'))(100) 
+plot(dvi2011, col=cldvi)
+
+#   AR - MULTITEMPORAL ANALYSIS
+difdvi <- dvi2011 - dvi1988
+plot(difdvi)
+
+cldifdvi <- colorRampPalette(c('red','white','blue'))(100)  
+plot(difdvi, col=cldifdvi)
+
+dev.off()
+
+#  AR -  VISUALIZZARE GLI OUTPUTS
+#  AR -  multiframe 1988rgb, 2011rgb, difdvi
+par(mfrow=c(3,1))
+plotRGB(p224r63_1988, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+plot(difdvi, col=cldifdvi)
+
+dev.off()
+
+#  AR -  RICAMPIONARE L'IMMAGINE DEL 2011
+p224r63_2011lr <- aggregate(p224r63_2011, fact=10)
+
+
+par(mfrow=c(2,1))
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011lr, r=4, g=3, b=2, stretch="Lin")
+dev.off()
+
+#   AR - LOWER RESOLUTION
+p224r63_2011lr50 <- aggregate(p224r63_2011, fact=50)
+# original 30m <- resampled 1500m 
+
+#   AR - PLOT DELLE TRE IMMAGINI CON RISOLUZIONI DIVERSE
+par(mfrow=c(3,1))
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011lr, r=4, g=3, b=2, stretch="Lin")
+plotRGB(p224r63_2011lr50, r=4, g=3, b=2, stretch="Lin")
+
+dev.off()
+    
+#   AR - CALCOLARE IL dvi2011lr50
+dvi2011lr50 <- p224r63_2011lr50$B4_sre - p224r63_2011lr50$B3_sre
+plot(dvi2011lr50)
+
+dev.off()
+
+#  AR -  RICAMPIONARE L'IMMAGINE DEL 1988
+p224r63_1988lr50 <- aggregate(p224r63_1988, fact=50)
+
+#   AR - CALCOLARE IL dvi1988lr50
+dvi1988lr50 <- p224r63_1988lr50$B4_sre - p224r63_1988lr50$B3_sre
+plot(dvi1988lr50)
+
+#  AR -  multitemporal analysis lr50 (low resolution)
+difdvilr50 <- dvi2011lr50 - dvi1988lr50
+plot(difdvilr50)
+
+plot(difdvilr50,col=cldifdvi)
+
+dev.off()
+
+#   AR - PLOTTARE LA difdvi (ad alta definizione) CON LA difdvilr50 (a bassa risoluzione)
+par(mfrow=c(2,1))
+plot(difdvi, col=cldifdvi)
+plot(difdvilr50, col=cldifdvi)
+    
+dev.off()
+
+##############################################
+##############################################
+##############################################
+
+### 6. R CODE LAND COVER
+
+# ANALISI LAND COVER
+
+setwd("C:/Lab")
+
+library(raster)
+library(RStoolbox)
+
+# AR - Funzione che si chiama brick (impila tutti i dati e importali dentro R). Si utilizzano le virgolette perchè usciamo da R
+# AR - p = path r= row dell'immagine landsat scaricata (sud America)
+p224r63_2011 <- brick ("p224r63_2011_masked.grd")
+
+# AR - facciamo un plot veloce con le componenti RGB e prima utilizziamo il pacchetto RStoolbox)
+# AR - bande di landsat: 1b, 2g, 3r, 4nir
+# AR - in questo modo quello che riflette l'infrarosso lo vediamo in ROSSO con r=4
+library(RStoolbox)
+plotRGB(p224r63_2011, r=4, g=3, b=2, stretch="Lin")
+
+# AR - decidiamo di mettere 4 classi, uno agricolo/nudo, uno di vegetazione, uno di vegetazione separativa
+# AR - questa funzione la chiamiamo con il nome dell'immagine ma con una c per dire classificato
+p224r63_2011c <- unsuperClass(p224r63_2011, nClasses=4)
+
+p224r63_2011c #così vediamo tutte le informazioni del raster. (att. $map il $ indica che c'è stata un'unione)
+
+# AR - adesso per plottare la mappa
+plot(p224r63_2011c$map)
+
+# AR - per stabilire noi una leggenda, colorRampPalette
+clclass <- colorRampPalette(c('red', 'green', 'blue', 'black'))(100)
+# AR - per riplottarlo
+plot(p224r63_2011c$map, col=clclass)
+
+
+# AR - rifacciamo lo stesso processo, ma con numero classi ridotto
+p224r63_2011c <- unsuperClass(p224r63_2011, nClasses=2)
+plot(p224r63_2011c$map)
+
+# AR - in funzione del numero di classi, aumenta l'incertezza dell'algoritmo automatico
+# AR - Con 2 classi l'incertezza è più bassa che con 4
+
+#######################################################################
+#######################################################################
+#######################################################################
