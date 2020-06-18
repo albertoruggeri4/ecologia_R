@@ -761,7 +761,8 @@ defor1 <- brick("C:/Lab/defor1_.jpg")
 defor2 <- brick("C:/Lab/defor2_.jpg") 
 
 # AR - PER USARE DUE CLASSI NON SUPERVISIONATE (ossia non spieghiamo al computer la divisione)
-# AR - NOTE: Computer raggruppa pixel che sembrano simili tra lorodefor1_c <- unsuperClass(defor1, nClasses=2)
+# AR - NOTE: Computer raggruppa pixel che sembrano simili tra loro
+defor1_c <- unsuperClass(defor1, nClasses=2)
 plot(defor1_c$map)
 
 # AR - ESERCIZIO: classificare con due classi l'immagine satellitare defor
