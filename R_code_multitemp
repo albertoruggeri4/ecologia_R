@@ -1,0 +1,114 @@
+
+# 7. R_code_multitemp
+
+# AR - Classificare un'immagine partendo dai dati dei pixel iniziali, raggruppandoli in classi di copertura del suolo
+#una classificazione con un algoritmo
+
+
+library(raster)
+library(ncdf4)
+library(rgdal)
+library(RStoolbox) # per utilizzare la classificazione unsuperClass
+
+setwd("C:/Lab")
+
+cl <- colorRampPalette(c('darkblue','blue','light blue'))(100) 
+
+# AR - IMPORTARE LE IMMAGINI DALLA CARTELLA DI LAVORO (Lab)
+defor1 <- brick("C:/Lab/defor1_.jpg") 
+defor2 <- brick("C:/Lab/defor2_.jpg") 
+
+# AR - PER USARE DUE CLASSI NON SUPERVISIONATE (ossia non spieghiamo al computer la divisione)
+# AR - NOTE: Computer raggruppa pixel che sembrano simili tra lorodefor1_c <- unsuperClass(defor1, nClasses=2)
+plot(defor1_c$map)
+
+# AR - ESERCIZIO: classificare con due classi l'immagine satellitare defor
+defor2_c <- unsuperClass(defor2, nClasses=2)
+plot(defor2_c$map)
+
+par(mfrow=c(2,2))
+cl <- colorRampPalette(c('black','green'))(100) # 
+plotRGB(defor1,1,2,3)
+plotRGB(defor2,1,2,3)
+plot(defor1_c$map,col=cl)
+plot(defor2_c$map,col=cl)
+
+d1 <- defor1_c$map
+d2 <- defor2_c$map
+
+
+# AR - FUNZIONE freq() PER VISUALIZZARE LA SUDDIVISIONE DEI PIXEL NELLE CLASSI
+freq(d1)
+totd1 <- 33757+307535 #numero px carta
+percent1 <- freq(d1)*100/totd1 # PER CALCOLARE LE PROPORZIONI, LA PERCENTUALE DELLE FREQUENZE
+
+# AR - percentuali:
+# AR - aree altre: 10.4
+# AR - foreste: 89.6
+
+# AR - STESSO PROCEDIMENTO PER LA CARTA 2
+freq(d2)
+totd2 <- 164271+178455
+percent2 <- freq(d2)*100/totd2
+percent2
+
+# AR - aree altre: 48
+# AR - foreste: 52
+
+
+# AR - CREARE UN DATAFRAME CON QUESTI DATI
+cover <- c("Agriculture","Forest")
+before <- c(9.9,90.1)
+after <- c(48.1,52.2)
+
+output <- data.frame(cover,before,after)
+View(output)
+
+
+############# GIORNO 2 ##################
+    
+library(gridExtra)
+
+setwd("C:/Lab/") # windows
+
+# AR - caricare l'area di lavoro 
+load("defor.RData")
+ls()
+library(raster)
+ 
+# AR -  plottare le due mappe 
+par(mfrow=c(1,2))
+cl <- colorRampPalette(c('black','green'))(100)
+plot(d1c$map, col=cl)
+plot(d2c$map, col=cl)
+
+#  AR - copertura 
+cover <- c("Agriculture","Forest")
+before <- c(10.9,89.1)
+after <- c(48.2,51.8)
+
+output <- data.frame(cover,before,after)
+output
+
+# AR -  richiamare la libreria ggplot2
+library(ggplot2)
+
+#  AR - istogramma della % di copertura prima della deforestazione
+ggplot(output, aes(x=cover, y=before, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+dev.off()
+
+#  AR - Exercise: fare lo stesso procedimento per il dopo deforestazione ("after") 
+ggplot(output, aes(x=cover, y=after, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+#  AR - assegnare un nome agli istogrammi 
+grafico1 <- ggplot(output, aes(x=cover, y=before, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+grafico2 <- ggplot(output, aes(x=cover, y=after, color=cover)) +
+geom_bar(stat="identity", fill="white")
+
+#  AR - Exercise: utilizzare la funzione grid.arrange(plot1, plot2, nrow=n) per unire i due grafici
+grid.arrange(grafico1, grafico2, nrow=1)
