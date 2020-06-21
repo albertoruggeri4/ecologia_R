@@ -1,4 +1,4 @@
-# ESAME DI ECOLOGIA DEL PAESAGGIO (DUCCIO ROCCHINI - UNIBO)
+#ECOLOGIA DEL PAESAGGIO
 # R CODE
 
 
@@ -1251,3 +1251,299 @@ plot(s1, col=cl)
 # Here put your code
 
 
+
+
+
+# R Exam code
+
+
+
+#  INDICE
+
+#### 1. Set WD e Library
+#### 2. Import e taglio Raster
+#### 3. NDVI - LAI (Sud America)
+#### 4. FIRMS NASA - dati incendi
+#### 5. Focus Brasile - grafici
+
+###########################################################################################################
+
+
+#### 1. Set WD e Library
+
+setwd("C:/Lab/Exam/Esame")
+
+library(raster) # raster
+library(ncdf4) # .nc
+library(rgdal) # geospatial data - vector, raster, proj
+library(ggplot2) #grafici
+library(spatstat) #Spatial Point Pattern Analysis
+
+
+##############################################
+
+#### 2. Import e taglio Raster
+
+# importo i raster singolarmente per poterli richiamare più facilmente
+#NDVI
+ndvi_2018 <- raster("NDVI_201804210000_GLOBE_PROBAV_V2.2.1.nc")
+ndvi_2019 <- raster("NDVI_201908210000_GLOBE_PROBAV_V2.2.1.nc")
+ndvi_2020 <- raster("NDVI_202004210000_GLOBE_PROBAV_V2.2.1.nc")
+
+#LAI 
+lai_2018 <- raster("LAI-RT6_201805200000_GLOBE_PROBAV_V2.0.1.nc")
+lai_2019 <- raster("LAI-RT6_201908310000_GLOBE_PROBAV_V2.0.1.nc")
+lai_2020 <- raster("LAI-RT6_202004100000_GLOBE_PROBAV_V2.0.1.nc")
+
+
+# Effettuo un taglio dei raster, nella zona centrale del Sud America
+
+ext <- c(-80,-30, -30,10)
+SA_nd18 <- crop(ndvi_2018, ext)
+SA_nd19 <- crop(ndvi_2019, ext)
+SA_nd20 <- crop(ndvi_2020, ext)
+
+SA_lai18 <- crop(lai_2018, ext)
+SA_lai19 <- crop(lai_2019, ext)
+SA_lai20 <- crop(lai_2020, ext)
+
+
+################################################
+
+#### 3. NDVI - LAI (Sud America)
+
+#plottaggio delle immagini importate per iniziare un'analisi della variazione della vegetazione
+
+cl <- colorRampPalette(c("orange","yellow","yellow3", "palegreen","greenyellow","green3","darkgreen")) (100)
+
+
+par(mfrow=c(2,3))
+plot(SA_nd18, col=cl, main="NDVI 2018")
+plot(SA_nd19, col=cl,main="NDVI 2019")
+plot(SA_nd20, col=cl,main="NDVI 2020")
+
+plot(SA_lai18, col=cl,main="LAI 2018")
+plot(SA_lai19, col=cl,main="LAI 2019")
+plot(SA_lai20, col=cl,main="LAI 2020")
+
+#dev.copy(jpeg,'SA.jpeg')
+#dev.off()
+
+
+##### Calcolo delle differenze tra il 2020 ed il 2019 e plottaggio
+
+d_ndvi <-SA_nd20 - SA_nd19
+d_lai <- SA_lai20 - SA_lai19
+
+cld <- colorRampPalette(c("beige","lemonchiffon1","tan2", "orange","orange3","orangered3","red","orangered4","red4")) (100)
+
+par(mfrow=c(2,2))
+plot(d_ndvi, col= cld, main= "NDVI2020 - NDVI2019")
+plot(d_lai, col= cld, main= "LAI2020 - LAI2019")
+
+#dev.copy(jpeg,'SA_diff.jpeg')
+#dev.off()
+
+#####################################################################################################
+
+
+#### 4. FIRMS NASA - dati incendi                  link:      https://firms.modaps.eosdis.nasa.gov/map/
+
+## Utilizzo dei dati csv del portale FIRMS NASA per evidenziare le zone maggiormente colpite dagli incendi
+
+#importiamo il file csv attraverso la funzione read.table()
+fire_all <- read.table("fire_archive_M6_132761_v.csv", head=T)
+
+#la funzione summary() ci permette di vedere gli attributi del file
+summary(fire_all)
+
+# Attributi file csv:
+
+#andiamo a plottare il file per vedere il periodo con maggiori incendi
+attach(fire_all)
+plot(acq_date, las=1)
+
+#dev.copy(jpeg,'FIRMS_graph.jpeg')
+#dev.off()
+
+
+
+#plottaggio dati con ggplot per avere una visione spaziale delle zone colpite
+fire_sum <- read.table("L07_A08_S09_2019_rr.CSV", head=T)
+ggplot(fire_sum, aes(x=longitude,y=latitude, size=brightness,))+ geom_point()
+
+
+# Plottaggio dei punti (trasformati da CSV a SHP su QGIS) sui RASTER DI NDVI
+
+fire_shape <- readOGR("fire_JAS_19.shp")
+
+par(mfrow=c(2,2))
+plot(SA_nd19, main="NDVI 2019")
+plot(fire_shape, col="red", pch=18, cex=1, add=T)
+plot(SA_nd20, main="NDVI 2020")
+plot(fire_shape, col="red", pch=18, cex=1, add=T)
+
+plot(SA_nd19, main="NDVI 2019")
+plot(SA_nd20, main="NDVI 2020")
+
+
+## scrematura dei dati per poter aver un quadro più chiaro, evidenziando gli incendi più grandi
+points(fire_shape[fire_shape$brightness > 450,],pch=17)
+
+# creazione una color ramp palette per lo shape puntuale degli incendi
+fcl <- colorRampPalette(c("red","red2","red3", "red4")) (100)
+
+par(mfrow=c(2,2))
+plot(SA_lai19, main="LAI 2019")
+points(fire_shape[fire_shape$brightness > 450,],col=fcl,pch=17)
+plot(SA_lai20, main="LAI 2020")
+points(fire_shape[fire_shape$brightness > 450,],col=fcl,pch=17)
+
+plot(SA_lai19, main="LAI 2019")
+plot(SA_lai20, main="LAI 2020")
+
+
+#Costruzione della DENSITY MAP - Points Pattern -- ZONA CON MAGGIORI INCENDI TRA GIUGNO/SETTEMBRE 2019
+
+summary(fire_shape)
+
+#### RIGUARDA QUESTA FUNZIONE
+ppp <- ppp(fire_shape$longitude, fire_shape$latitude, c(-90,-30),c(-30,10))
+dG <- density(ppp)
+plot(dG, main= "Density Map")
+
+# Aggiungiamo i confini
+coastlines <- readOGR("ne_10m_coastline.shp")
+ext <- c(-90,-30,-30,10)
+coast_AM <- crop(coastlines, ext)
+
+#Plot finale
+plot(dG, main=" Zona con il maggior numero di incendi tra Giugno - Settembre 2019.. ")
+plot(coast_AM, col="white", add=T)
+
+dev.copy(jpeg,'SA_density.jpeg')
+dev.off()
+
+###############################################################################################################
+
+####### 5. Focus Brasile - grafici
+
+# unsuperClass - RStoolBox
+library(RStoolbox)
+
+ext <- c(-45,-38,-11,-6)
+bra_nd18 <- crop(ndvi_2018, ext)
+bra_nd19 <- crop(ndvi_2019, ext)
+bra_nd20 <- crop(ndvi_2020, ext)
+
+bra_lai18 <- crop(lai_2018, ext)
+bra_lai19 <- crop(lai_2019, ext)
+bra_lai20 <- crop(lai_2020, ext)
+
+
+par(mfrow=c(1,2))
+plot(bra_nd19, main= "NDVI - 2019 (Brasile)")
+plot(bra_nd20, main= "NDVI - 2020 (Brasile)")
+
+
+# Classificazione immagini per una possibile analisi quantitativa
+
+#La funzione unsuperClass() unisci i px con valori simili tra loro
+#Costruiamo 3 classi: Low Level NDVI - Medium level NDVI - Maximum Level NDVI
+
+par(mfrow=c(1,2))
+b19c <- unsuperClass(bra_nd19,nClasses=3)
+plot(b19c$map, main = "Classificazione NDVI 2019")
+
+b20c <- unsuperClass(bra_nd20,nClasses=3)
+plot(b20c$map,main = "Classificazione NDVI 2020")
+
+####(Imm. Satell.) ####
+
+
+### Calcolo della frequenza
+
+freq(b19c$map)
+tot_ndvi19 <-258778 + 36338 + 143923
+perc_nd19 <- freq(b19c$map)*100/tot_ndvi19
+
+perc_nd19
+# LOW - NDVI : 58%
+# MEDIUM - NDVI: 8%
+# HIGH - NDVI: 32%
+
+freq(b20c$map)
+tot_ndvi20<- 197687 + 175078 + 66275
+perc_nd20 <- freq(b20c$map)*100/tot_ndvi20
+
+#NOTA: raster NDVI fanno riferimento al mese di Maggio, quindi la percentuale di HIGH NDVI del 2019 con alte probabilità
+#      sarà diminuita sfortunatamente nei giorni/mesi successivi
+
+perc_nd20
+# LOW - NDVI : 45%
+# MEDIUM - NDVI : 40%
+# HIGH - NDVI: 15%
+
+#Creazione DataFrame
+total_liv_ndvi <- c("1. Low Level NDVI","2. Medium Level NDVI","3. High Level NDVI")
+px_ndvi_19 <- c(59,8,33)
+px_ndvi_20 <- c(45,40,15)
+
+output <- data.frame(total_liv_ndvi,px_ndvi_19,px_ndvi_20)
+View(output)
+
+###### Analisi attraverso i grafici ####
+
+## GGPLOT GRAPH
+library(ggplot2)
+
+grafico_ndvi2019 <-ggplot(output, aes(x=total_liv_ndvi, y=px_ndvi_19, color=total_liv_ndvi)) + geom_bar(stat="identity", fill="green3")
+
+
+grafico_ndvi2020 <-ggplot(output, aes(x=total_liv_ndvi, y=px_ndvi_20, color=total_liv_ndvi)) + geom_bar(stat="identity", fill="green1")
+
+
+library(gridExtra)
+grid.arrange(grafico_ndvi2019, grafico_ndvi2020, nrow=1)
+
+#### HIST
+
+par(mfrow=c(2,3))
+hist(bra_nd18, main =" NDVI - 2018 (Brasile) ", xlab = "NDVI Level", ylab= "N° px", col="springgreen")
+hist(bra_nd19, main =" NDVI - 2019 (Brasile) ", xlab = "NDVI Level", ylab= "N° px", col="springgreen")
+hist(bra_nd20, main =" NDVI - 2020 (Brasile) ", xlab = "NDVI Level", ylab= "N° px", col="springgreen")
+
+hist(bra_lai18, main =" LAI - 2018 (Brasile) ", xlab = "LAI Level", ylab= "N° px", col="green2")
+hist(bra_lai19, main =" LAI - 2019 (Brasile) ", xlab = "LAI Level", ylab= "N° px", col="green2")
+hist(bra_lai20, main =" LAI - 2020 (Brasile) ", xlab = "LAI Level", ylab= "N° px", col="green2")
+
+#CONFRONTO ISTOGRAMMI
+
+par(mfrow=c(1,2))
+hist(bra_nd19, main =" NDVI 2019 - NDVI 2020 (Brasile) ", xlab = "NDVI Level", ylab= "N° px", col="green")
+hist(bra_nd20, xlab = "NDVI Level", ylab= "N° px", col="green4",add=T)
+legend("topleft", legend=c("2019","2020"), col=c("green", "green4"), pt.cex=2, pch=15 )
+
+hist(bra_lai19, main =" LAI 2019 - LAI 2020 (Brasile) ", xlab = "NDVI Level", ylab= "N° px", col="greenyellow")
+hist(bra_lai20, xlab = "NDVI Level", ylab= "N° px", col="chartreuse3",add=T)
+legend("topright", legend=c("2019","2020"), col=c("greenyellow", "chartreuse3"), pt.cex=2, pch=15 )
+
+
+
+
+
+######### Immagine RGB del Sud America ######
+cop_list <- list.files(pattern="NDVI_20")
+cop_list
+
+cop_fin <- lapply(cop_list,raster)
+cop_fin
+
+cop_st <- stack(cop_fin)
+cop_st
+
+ext <- c(-80,-30, -30,10)
+SA_cop <- crop(cop_st, ext)
+
+####https://www.rdocumentation.org/packages/raster/versions/3.1-5/topics/plotRGB
+plotRGB(SA_cop, r=1, g=2, b=3, stretch="Lin")
