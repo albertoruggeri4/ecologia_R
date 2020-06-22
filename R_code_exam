@@ -1408,7 +1408,6 @@ plot(SA_lai20, main="LAI 2020")
 
 summary(fire_shape)
 
-#### RIGUARDA QUESTA FUNZIONE
 ppp <- ppp(fire_shape$longitude, fire_shape$latitude, c(-90,-30),c(-30,10))
 dG <- density(ppp)
 plot(dG, main= "Density Map")
